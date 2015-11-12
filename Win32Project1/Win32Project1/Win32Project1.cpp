@@ -67,7 +67,6 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	}
 
 	delete[] g_message;
-	CloseHandle(g_hPipe);
 	return (int) msg.wParam;
 }
 
