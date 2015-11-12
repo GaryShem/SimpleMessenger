@@ -11,7 +11,11 @@
 int _tmain(int argc, _TCHAR* argv[])
 {
 	std::unique_ptr<char[]> msg(new char[300]);
-	HANDLE hPipe = CreateNamedPipe("\\\\.\\pipe\\smpipe",
+	
+	
+	while (true)
+	{
+		HANDLE hPipe = CreateNamedPipe("\\\\.\\pipe\\smpipe",
 		PIPE_ACCESS_DUPLEX,
 		PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
 		PIPE_UNLIMITED_INSTANCES,
@@ -19,15 +23,15 @@ int _tmain(int argc, _TCHAR* argv[])
 		0,
 		0,
 		NULL);
-	while (true)
-	{
+		if (hPipe == INVALID_HANDLE_VALUE)
+		return -1;
 		ConnectNamedPipe(hPipe, NULL);
 		DWORD dwBytesRead;
 		ReadFile(hPipe, msg.get(), 260, &dwBytesRead, NULL);
 		if (dwBytesRead > 0)
 			std::cout << msg.get() << std::endl;
+		CloseHandle(hPipe);
 	}
-	CloseHandle(hPipe);
 	return 0;
 }
 

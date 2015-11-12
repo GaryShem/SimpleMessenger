@@ -8,13 +8,16 @@
 //changed
 #define ID_STR_LINE 9001
 #define ID_BTN_SEND 2124
+#define ID_PIPE_ADDR 4143
+#define ID_BTN_CONNECT 8694
+
 #include <string>
 #include <memory>
 //changed
 HANDLE g_hPipe;
 std::string g_pipeName;
 char* g_message;
-
+DWORD g_dwMode = PIPE_READMODE_MESSAGE;
 
 
 // Global Variables:
@@ -115,26 +118,22 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    hInst = hInstance; // Store instance handle in our global variable
 
    hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, 430, 80, NULL, NULL, hInstance, NULL);
+      CW_USEDEFAULT, 0, 430, 150, NULL, NULL, hInstance, NULL);
+   //создаём кнопку коннекта
+   CreateWindowEx(WS_EX_STATICEDGE, "BUTTON", "Connect", WS_CHILD | WS_VISIBLE,
+	   280, 10, 120, 25, hWnd, (HMENU)ID_BTN_CONNECT, hInstance, NULL);
+   //создаём текстовое поле для адреса
+   CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE,
+	   10, 10, 260, 25, hWnd, (HMENU)ID_PIPE_ADDR, hInstance, NULL);
+
    //создаём кнопку
    CreateWindowEx(WS_EX_STATICEDGE, "BUTTON", "Send to server", WS_CHILD | WS_VISIBLE,
-	   280, 12, 120, 25, hWnd, (HMENU)ID_BTN_SEND, hInstance, NULL);
+	   280, 62, 120, 25, hWnd, (HMENU)ID_BTN_SEND, hInstance, NULL);
    //создаём текстовое поле
    CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE,
-	   10, 10, 260, 25, hWnd, (HMENU)ID_STR_LINE, hInstance, NULL);
-
-   g_pipeName = "\\\\.\\pipe\\smpipe";
-   g_hPipe = CreateFile(g_pipeName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-
-   if (g_hPipe == INVALID_HANDLE_VALUE)
-	   return FALSE;
-
-   DWORD dwMode = PIPE_READMODE_MESSAGE;
-   if (!SetNamedPipeHandleState(g_hPipe, &dwMode, NULL, NULL))
-   {
-	   CloseHandle(g_hPipe);
-	   return false;
-   }
+	   10, 60, 260, 25, hWnd, (HMENU)ID_STR_LINE, hInstance, NULL);
+   
+   g_hPipe = INVALID_HANDLE_VALUE;
 
    g_message = new char[260];
    for (int i = 0; i < 260; i++)
@@ -176,15 +175,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// Parse the menu selections:
 		switch (wmId)
 		{
+		case ID_BTN_CONNECT:
+			char addr[100];
+			GetDlgItemText(hWnd, ID_PIPE_ADDR, addr, 100);
+			
+			if (strlen(addr) > 0)
+			{
+				g_pipeName = "\\\\" + std::string(addr) + "\\pipe\\smpipe";
+			}
+			//delete[] addr;
+			break;
 		case ID_BTN_SEND:
-			//проверить доступность проекции (синхронизация)
-			//Wait mutex (WaitForSingleObject)
-			//GetDlgItemText
-			//SetDlgItemText
-			//set event (уведомить сервер)
+			g_hPipe = CreateFile(g_pipeName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+			
+			if (g_hPipe == INVALID_HANDLE_VALUE || !SetNamedPipeHandleState(g_hPipe, &g_dwMode, NULL, NULL))
+				break;
 			GetDlgItemText(hWnd, ID_STR_LINE, g_message, 255);
 			DWORD dwBytesWritten;
 			WriteFile(g_hPipe, g_message, 255, &dwBytesWritten, NULL);
+			CloseHandle(g_hPipe);
 			break;
 		case IDM_ABOUT:
 			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
