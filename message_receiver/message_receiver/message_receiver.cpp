@@ -5,30 +5,29 @@
 #include "windows.h"
 #include <string>
 #include <iostream>
+#include <memory>
 
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-
-	HANDLE hMutex = CreateMutex(NULL, FALSE, "SimpleMessengerMutex");
-	HANDLE hEvent = CreateEvent(NULL, FALSE, FALSE, "SimpleMessengerEvent");
-	HANDLE hFileMapping = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_EXECUTE_READWRITE,
-		0, 300, "SimpleMessengerMapping");
-	char* pBuffer = (char*)MapViewOfFile(hFileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-	int i = 0;
+	std::unique_ptr<char[]> msg(new char[300]);
+	HANDLE hPipe = CreateNamedPipe("\\\\.\\pipe\\smpipe",
+		PIPE_ACCESS_DUPLEX,
+		PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
+		PIPE_UNLIMITED_INSTANCES,
+		260,
+		0,
+		0,
+		NULL);
 	while (true)
 	{
-		WaitForSingleObject(hEvent, INFINITE);
-		WaitForSingleObject(hMutex, INFINITE);
-		i++;
-		std::cout << pBuffer << std::endl;
-		ReleaseMutex(hMutex);
-		if (i > 20)
-			break;
+		ConnectNamedPipe(hPipe, NULL);
+		DWORD dwBytesRead;
+		ReadFile(hPipe, msg.get(), 260, &dwBytesRead, NULL);
+		if (dwBytesRead > 0)
+			std::cout << msg.get() << std::endl;
 	}
-	CloseHandle(hMutex);
-	CloseHandle(hEvent);
-	CloseHandle(hFileMapping);
+	CloseHandle(hPipe);
 	return 0;
 }
 

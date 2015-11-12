@@ -8,11 +8,14 @@
 //changed
 #define ID_STR_LINE 9001
 #define ID_BTN_SEND 2124
+#include <string>
+#include <memory>
 //changed
-HANDLE g_hFileMapping;
-HANDLE g_hEvent;
-HANDLE g_hMutex;
-char* g_pBuffer;
+HANDLE g_hPipe;
+std::string g_pipeName;
+char* g_message;
+
+
 
 // Global Variables:
 HINSTANCE hInst;								// current instance
@@ -60,10 +63,8 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		}
 	}
 
-
-	CloseHandle(g_hEvent);
-	CloseHandle(g_hFileMapping);
-	CloseHandle(g_hMutex);
+	delete[] g_message;
+	CloseHandle(g_hPipe);
 	return (int) msg.wParam;
 }
 
@@ -122,13 +123,23 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE,
 	   10, 10, 260, 25, hWnd, (HMENU)ID_STR_LINE, hInstance, NULL);
 
-   g_hMutex = OpenMutex(SYNCHRONIZE, FALSE, "SimpleMessengerMutex");
-   g_hEvent = OpenEvent(EVENT_MODIFY_STATE, FALSE, "SimpleMessengerEvent");
-   g_hFileMapping = OpenFileMapping(FILE_MAP_READ | FILE_MAP_WRITE, FALSE, "SimpleMessengerMapping");
+   g_pipeName = "\\\\.\\pipe\\smpipe";
+   g_hPipe = CreateFile(g_pipeName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
 
-   if (g_hMutex == NULL || g_hEvent == NULL || g_hFileMapping == NULL)
+   if (g_hPipe == INVALID_HANDLE_VALUE)
+	   return FALSE;
+
+   DWORD dwMode = PIPE_READMODE_MESSAGE;
+   if (!SetNamedPipeHandleState(g_hPipe, &dwMode, NULL, NULL))
+   {
+	   CloseHandle(g_hPipe);
 	   return false;
-   g_pBuffer = (char*)MapViewOfFile(g_hFileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+   }
+
+   g_message = new char[260];
+   for (int i = 0; i < 260; i++)
+	   g_message[i] = 0;
+
 
    if (!hWnd)
    {
@@ -171,11 +182,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			//GetDlgItemText
 			//SetDlgItemText
 			//set event (уведомить сервер)
-			WaitForSingleObject(g_hMutex, INFINITE);
-			GetDlgItemText(hWnd, ID_STR_LINE, g_pBuffer, 255);
-			//SetDlgItemText
-			SetEvent(g_hEvent);
-			ReleaseMutex(g_hMutex);
+			GetDlgItemText(hWnd, ID_STR_LINE, g_message, 255);
+			DWORD dwBytesWritten;
+			WriteFile(g_hPipe, g_message, 255, &dwBytesWritten, NULL);
 			break;
 		case IDM_ABOUT:
 			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
