@@ -6,31 +6,36 @@
 #include <string>
 #include <iostream>
 #include <memory>
+#include "Logger.h"
 
 
 int _tmain(int argc, _TCHAR* argv[])
 {
 	std::unique_ptr<char[]> msg(new char[300]);
+
+	std::string path = "D:\\Igor\\C++\\OSWindows\\CustomLogs\\";
+	std::string prefix = "sm";
+
+	logger::LogInit(path.c_str(), prefix.c_str(), 2);
 	
-	
+	HANDLE hPipe = CreateNamedPipe("\\\\.\\pipe\\smpipe", PIPE_ACCESS_DUPLEX,
+		PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
+		PIPE_UNLIMITED_INSTANCES, 260, 0, 0, NULL);
+
 	while (true)
 	{
-		HANDLE hPipe = CreateNamedPipe("\\\\.\\pipe\\smpipe",
-		PIPE_ACCESS_DUPLEX,
-		PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
-		PIPE_UNLIMITED_INSTANCES,
-		260,
-		0,
-		0,
-		NULL);
 		if (hPipe == INVALID_HANDLE_VALUE)
-		return -1;
+			return -1;
 		ConnectNamedPipe(hPipe, NULL);
+		logger::LogWrite("Client connected", logger::LogLevel::LOGLEVEL_INFO);
 		DWORD dwBytesRead;
 		ReadFile(hPipe, msg.get(), 260, &dwBytesRead, NULL);
 		if (dwBytesRead > 0)
+		{
 			std::cout << msg.get() << std::endl;
-		CloseHandle(hPipe);
+			WriteFile(logger::file, msg.get(), 255, NULL, NULL);
+		}
+		DisconnectNamedPipe(hPipe);
 	}
 	return 0;
 }
