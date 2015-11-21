@@ -27,13 +27,14 @@ int _tmain(int argc, _TCHAR* argv[])
 		if (hPipe == INVALID_HANDLE_VALUE)
 			return -1;
 		ConnectNamedPipe(hPipe, NULL);
-		logger::LogWrite("Client connected", logger::LogLevel::LOGLEVEL_INFO);
+		logger::LogWrite("Client connected", logger::LOGLEVEL_INFO);
 		DWORD dwBytesRead;
 		ReadFile(hPipe, msg.get(), 260, &dwBytesRead, NULL);
+		msg[dwBytesRead] = '\0';
 		if (dwBytesRead > 0)
 		{
 			std::cout << msg.get() << std::endl;
-			WriteFile(logger::file, msg.get(), 255, NULL, NULL);
+			logger::LogWrite(msg.get(), logger::LOGLEVEL_INFO);
 		}
 		DisconnectNamedPipe(hPipe);
 	}
