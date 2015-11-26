@@ -1,7 +1,5 @@
 #include "stdafx.h"
 #include "Logger.h"
-#include <string>
-#include <sstream>
 
 void logger::LogInit(const char* logPath, const char* prefix, int logLevel)
 {
@@ -9,47 +7,44 @@ void logger::LogInit(const char* logPath, const char* prefix, int logLevel)
 	std::ostringstream ss;
 	GetSystemTime(&st);
 	ss << logPath << prefix << "_" << st.wDay << "." << st.wMonth << "." << st.wYear << ".txt";
-	std::string fullFilename = ss.str();
-	file = CreateFile(fullFilename.c_str(), GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-	SetFilePointer(file, NULL, NULL, FILE_END);
-
+	filename = ss.str();
+	std::string temp = filename;
 	InitializeCriticalSection(&logProtection);
 
-	logger::level = logLevel;
+	level = logLevel;
 }
 
-void logger::LogWrite(const char* logMessage, LogLevel logSeverity)
+void logger::LogWrite(const char* logMessage, int logSeverity)
 {
 	EnterCriticalSection(&logProtection);
+	HANDLE file = CreateFile(filename.c_str(), GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (file != INVALID_HANDLE_VALUE)
 	{
 		if (logSeverity <= level)
 		{
+			SetFilePointer(file, NULL, NULL, FILE_END);
 			SYSTEMTIME st;
 			GetSystemTime(&st);
-			std::ostringstream msg;
-			msg << st.wHour << "." << st.wMinute << "." << st.wSecond;
+			std::ostringstream msgStream;
+			msgStream << st.wHour << "." << st.wMinute << "." << st.wSecond;
 			switch (logSeverity)
 			{
-			case LOGLEVEL_DEBUG:
-				msg << " (DEBUG) ";
+			case 2:
+				msgStream << " (DEBUG) ";
 				break;
-			case LOGLEVEL_INFO:
-				msg << " (INFO) ";
+			case 1:
+				msgStream << " (WARNING/SYSTEM/INFO) ";
 				break;
-			case LOGLEVEL_SYSTEM:
-				msg << " (SYSTEM) ";
-				break;
-			case LOGLEVEL_WARNING:
-				msg << " (WARNING) ";
-				break;
-			case LOGLEVEL_ERROR:
-				msg << " (ERROR) ";
+			case 0:
+				msgStream << " (ERROR) ";
 				break;
 			}
-			msg << logMessage << "\r\n";
-			WriteFile(file, msg.str().c_str(), strlen(msg.str().c_str()), NULL, NULL);
+			msgStream << logMessage << "\r\n";
+			std::string msg = msgStream.str();
+			size_t length = strlen(msg.c_str());
+			WriteFile(file, msg.c_str(), length, NULL, NULL);
 		}
 	}
+	CloseHandle(file);
 	LeaveCriticalSection(&logProtection);
 }
