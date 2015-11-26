@@ -11,7 +11,7 @@
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	std::unique_ptr<char[]> msg(new char[300]);
+	char msg[300];
 
 	std::string path = "D:\\Igor\\C++\\OSWindows\\CustomLogs\\";
 	std::string prefix = "sm";
@@ -21,22 +21,26 @@ int _tmain(int argc, _TCHAR* argv[])
 	HANDLE hPipe = CreateNamedPipe("\\\\.\\pipe\\smpipe", PIPE_ACCESS_DUPLEX,
 		PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
 		PIPE_UNLIMITED_INSTANCES, 260, 0, 0, NULL);
+	if (hPipe == INVALID_HANDLE_VALUE)
+	{
+		logger::LogWrite("Could not create connection", logger::LOGLEVEL_ERROR);
+		return -1;
+	}
 
 	while (true)
 	{
-		if (hPipe == INVALID_HANDLE_VALUE)
-			return -1;
 		ConnectNamedPipe(hPipe, NULL);
-		logger::LogWrite("Client connected", logger::LOGLEVEL_INFO);
+		logger::LogWrite("Client connected", logger::LOGLEVEL_SYSTEM);
 		DWORD dwBytesRead;
-		ReadFile(hPipe, msg.get(), 260, &dwBytesRead, NULL);
+		ReadFile(hPipe, msg, 260, &dwBytesRead, NULL);
 		msg[dwBytesRead] = '\0';
 		if (dwBytesRead > 0)
 		{
-			std::cout << msg.get() << std::endl;
-			logger::LogWrite(msg.get(), logger::LOGLEVEL_INFO);
+			std::cout << msg << std::endl;
+			logger::LogWrite(msg, logger::LOGLEVEL_INFO);
 		}
 		DisconnectNamedPipe(hPipe);
+		logger::LogWrite(msg, logger::LOGLEVEL_SYSTEM);
 	}
 	return 0;
 }
