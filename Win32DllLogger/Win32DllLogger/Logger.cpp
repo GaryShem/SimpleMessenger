@@ -1,6 +1,10 @@
 #include "stdafx.h"
 #include "Logger.h"
 
+int level;
+std::string filename;
+CRITICAL_SECTION logProtection;
+
 void logger::LogInit(const char* logPath, const char* prefix, int logLevel)
 {
 	SYSTEMTIME st;
@@ -42,7 +46,8 @@ void logger::LogWrite(const char* logMessage, int logSeverity)
 			msgStream << logMessage << "\r\n";
 			std::string msg = msgStream.str();
 			size_t length = strlen(msg.c_str());
-			WriteFile(file, msg.c_str(), length, NULL, NULL);
+			DWORD mimimimimimimimi;
+			WriteFile(file, msg.c_str(), length, &mimimimimimimimi, NULL);
 		}
 	}
 	CloseHandle(file);
