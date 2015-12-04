@@ -15,8 +15,8 @@
 #include <memory>
 //changed
 HANDLE g_hPipe;
-std::string g_pipeName;
-char* g_message;
+std::wstring g_pipeName;
+wchar_t g_message[260];
 DWORD g_dwMode = PIPE_READMODE_MESSAGE;
 
 
@@ -65,8 +65,6 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 			DispatchMessage(&msg);
 		}
 	}
-
-	delete[] g_message;
 	return (int) msg.wParam;
 }
 
@@ -119,22 +117,20 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, 430, 150, NULL, NULL, hInstance, NULL);
    //создаём кнопку коннекта
-   CreateWindowEx(WS_EX_STATICEDGE, "BUTTON", "Connect", WS_CHILD | WS_VISIBLE,
+   CreateWindowEx(WS_EX_STATICEDGE, L"BUTTON", L"Connect", WS_CHILD | WS_VISIBLE,
 	   280, 10, 120, 25, hWnd, (HMENU)ID_BTN_CONNECT, hInstance, NULL);
    //создаём текстовое поле для адреса
-   CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE,
+   CreateWindowEx(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE,
 	   10, 10, 260, 25, hWnd, (HMENU)ID_PIPE_ADDR, hInstance, NULL);
 
    //создаём кнопку
-   CreateWindowEx(WS_EX_STATICEDGE, "BUTTON", "Send to server", WS_CHILD | WS_VISIBLE,
+   CreateWindowEx(WS_EX_STATICEDGE, L"BUTTON", L"Send to server", WS_CHILD | WS_VISIBLE,
 	   280, 62, 120, 25, hWnd, (HMENU)ID_BTN_SEND, hInstance, NULL);
    //создаём текстовое поле
-   CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE,
+   CreateWindowEx(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE,
 	   10, 60, 260, 25, hWnd, (HMENU)ID_STR_LINE, hInstance, NULL);
    
    g_hPipe = INVALID_HANDLE_VALUE;
-
-   g_message = new char[260];
    for (int i = 0; i < 260; i++)
 	   g_message[i] = 0;
 
@@ -175,12 +171,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		switch (wmId)
 		{
 		case ID_BTN_CONNECT:
-			char addr[100];
+			wchar_t addr[100];
 			GetDlgItemText(hWnd, ID_PIPE_ADDR, addr, 100);
 			
-			if (strlen(addr) > 0)
+			if (wcslen(addr) > 0)
 			{
-				g_pipeName = "\\\\" + std::string(addr) + "\\pipe\\smpipe";
+				g_pipeName = L"\\\\" + std::wstring(addr) + L"\\pipe\\smpipe";
 			}
 			//delete[] addr;
 			break;
