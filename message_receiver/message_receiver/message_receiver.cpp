@@ -11,6 +11,7 @@
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	setlocale(LC_ALL, "Russian");
 	char buffer[300];
 	char prefix[] = "sm";
 	GetCurrentDirectory(300, buffer);
