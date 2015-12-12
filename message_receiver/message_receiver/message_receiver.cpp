@@ -83,7 +83,7 @@ int _tmain(int argc, _TCHAR* argv[])
 			FALSE, //ждЄм хот€ бы один, а не все
 			INFINITE); //ждЄм до посинени€
 
-		int i = dwWait - WAIT_OBJECT_0; //тут мы вы€сн€ем, какой из ивентов включилс€
+		int i = dwWait - WAIT_OBJECT_0;
 		ResetEvent(hEvents[i]);
 //		BOOL WINAPI GetOverlappedResult(
 //			_In_  HANDLE       hFile,
@@ -117,6 +117,7 @@ int _tmain(int argc, _TCHAR* argv[])
 				std::wcout << msg[i] << std::endl;
 				dataRead[i] = false;
 				DisconnectNamedPipe(hPipes[i]);
+				ConnectNamedPipe(hPipes[i], &oOverlap[i]);
 			}
 		}
 
