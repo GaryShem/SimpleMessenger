@@ -10,13 +10,14 @@
 #define ID_BTN_SEND 2124
 #define ID_PIPE_ADDR 4143
 #define ID_BTN_CONNECT 8694
+#define BUFFER_SIZE	250
 
 #include <string>
 #include <memory>
 //changed
 HANDLE g_hPipe;
 std::wstring g_pipeName;
-wchar_t g_message[260];
+wchar_t g_message[BUFFER_SIZE];
 DWORD g_dwMode = PIPE_READMODE_MESSAGE;
 
 
@@ -131,7 +132,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	   10, 60, 260, 25, hWnd, (HMENU)ID_STR_LINE, hInstance, NULL);
    
    g_hPipe = INVALID_HANDLE_VALUE;
-   for (int i = 0; i < 260; i++)
+   for (int i = 0; i < BUFFER_SIZE; i++)
 	   g_message[i] = 0;
 
 
@@ -185,9 +186,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			
 			if (g_hPipe == INVALID_HANDLE_VALUE || !SetNamedPipeHandleState(g_hPipe, &g_dwMode, NULL, NULL))
 				break;
-			GetDlgItemText(hWnd, ID_STR_LINE, g_message, 255);
+			GetDlgItemText(hWnd, ID_STR_LINE, g_message, BUFFER_SIZE);
 			DWORD dwBytesWritten;
-			WriteFile(g_hPipe, g_message, 255, &dwBytesWritten, NULL);
+			WriteFile(g_hPipe, g_message, BUFFER_SIZE, &dwBytesWritten, NULL);
 			CloseHandle(g_hPipe);
 			break;
 		case IDM_ABOUT:
